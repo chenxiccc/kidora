@@ -27,7 +27,7 @@ class DnsFilterModule : Module() {
     }
 
     Function("setPolicy") { cfg: Map<String, Any?> ->
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       PolicyStore.save(
         ctx,
         blockedDomains = stringList(cfg["blockedDomains"]),
@@ -58,7 +58,7 @@ class DnsFilterModule : Module() {
     }
 
     Function("stop") {
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       // stopService (not startService with an action): it isn't subject to the
       // background-start restriction and triggers onDestroy → clean teardown.
       ctx.stopService(Intent(ctx, DnsVpnService::class.java))

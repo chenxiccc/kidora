@@ -20,7 +20,7 @@ class AppBlockerModule : Module() {
     }
 
     Function("openSettings") {
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       }
@@ -28,14 +28,14 @@ class AppBlockerModule : Module() {
     }
 
     Function("setBlockedPackages") { packages: List<String> ->
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       prefs(ctx).edit()
         .putStringSet(KidoraAccessibilityService.KEY_BLOCKED, HashSet(packages))
         .apply()
     }
 
     Function("setPaused") { paused: Boolean ->
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       prefs(ctx).edit().putBoolean(KidoraAccessibilityService.KEY_PAUSED, paused).apply()
     }
   }

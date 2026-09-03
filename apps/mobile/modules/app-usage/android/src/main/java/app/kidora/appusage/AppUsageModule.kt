@@ -27,7 +27,7 @@ class AppUsageModule : Module() {
     }
 
     Function("openSettings") {
-      val ctx = appContext.reactContext ?: return@Function
+      val ctx = appContext.reactContext ?: return@Function Unit
       val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       }
