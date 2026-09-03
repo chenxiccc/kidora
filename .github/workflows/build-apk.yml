@@ -1,0 +1,103 @@
+# Build both Kidora Android apps (Parents + Kids) as sideloadable APKs.
+#
+# Works on a FORK: no EAS, no Expo account, no secrets required.
+# Uses the GitHub-hosted Android SDK + JDK 17 + Node 20 runners.
+#
+# Usage:
+#   1. Push this file to your fork's default branch.
+#   2. GitHub → Actions → "Build Kidora APKs" → Run workflow.
+#   3. Optional input: server URL baked into the app as the default
+#      (the login screen still lets you type any server address).
+#   4. Download the two APKs from the workflow's artifact section.
+#
+# Manual trigger only (workflow_dispatch). Add `push: tags: [mobile-v*]`
+# if you want tag-triggered builds like the original repo.
+
+name: Build Kidora APKs
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: "Default server URL baked into the apps (login screen can override)"
+        required: false
+        default: "https://kidora.example.com"
+
+jobs:
+  build-apk:
+    name: Build Kidora ${{ matrix.role }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - role: parent
+            package: app.kidora.parent
+            apk_name: kidora-parents.apk
+          - role: child
+            package: app.kidora.child
+            apk_name: kidora-kids.apk
+    env:
+      APP_ROLE: ${{ matrix.role }}
+      KIDORA_SERVER: ${{ github.event.inputs.server_url || 'https://kidora.example.com' }}
+      CI: "1"
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || \
+          yes | "$ANDROID_HOME"/tools/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate native project (expo prebuild)
+        run: |
+          rm -rf android
+          npx expo prebuild --platform android --no-install
+
+      - name: Verify expected package name
+        run: |
+          grep -qE "applicationId[[:space:]]*['\"]${{ matrix.package }}['\"]" android/app/build.gradle* \
+            && echo "package OK: ${{ matrix.package }}" \
+            || { echo "package mismatch — aborting"; exit 1; }
+
+      - name: Build release APK (gradle)
+        run: |
+          cd android
+          ./gradlew --no-daemon --console=plain assembleRelease
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          [ -n "$APK" ] || { echo "No APK produced"; exit 1; }
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.apk_name }}
+          path: ${{ steps.apk.outputs.apk }}
+          if-no-files-found: error
+
+      - name: Summary
+        run: |
+          echo "Role: ${{ matrix.role }}"
+          echo "APK: ${{ steps.apk.outputs.apk }}"
+          echo "Download from the artifact section above (zip containing the APK)."
