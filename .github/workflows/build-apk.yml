@@ -86,7 +86,7 @@ jobs:
       - name: Locate APK
         id: apk
         run: |
-          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          APK=$(ls "$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/apk/release/"*.apk | head -1)
           [ -n "$APK" ] || { echo "No APK produced"; exit 1; }
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
 
