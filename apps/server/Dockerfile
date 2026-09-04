@@ -22,10 +22,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund --ignore-scripts
 
-# Copy the rest and build. The provider is fixed to postgres for the container
-# (the compose file provisions Postgres); `prisma generate` runs in prebuild.
+# Copy the rest and build. The provider is fixed at build time (Prisma client
+# dialect is baked at generate); override with --build-arg DATABASE_PROVIDER=sqlite
+# for a single-container SQLite deployment. The compose file provisions Postgres
+# by default; `prisma generate` runs in prebuild.
 COPY . .
-ENV DATABASE_PROVIDER=postgresql
+ARG DATABASE_PROVIDER=postgresql
+ENV DATABASE_PROVIDER=${DATABASE_PROVIDER}
 RUN npm run build
 
 ENV NODE_ENV=production

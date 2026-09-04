@@ -1,0 +1,79 @@
+# Build the Kidora server Docker image on GitHub Actions and push it to
+# GHCR (ghcr.io/chenxiccc/kidora-server), so the deployment server can
+# `docker pull` it without building locally.
+#
+# Trigger: manual (workflow_dispatch). Input selects the database provider
+# baked into the Prisma client at build time:
+#   - sqlite     (default) single-container deployment, minimal memory
+#   - postgresql classic server+Postgres compose deployment
+#
+# The image is public on GHCR after the first push (see deploy note below).
+
+name: Build Kidora Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      db_provider:
+        description: "Database provider baked into the Prisma client (sqlite | postgresql)"
+        required: false
+        default: "sqlite"
+        type: choice
+        options:
+          - sqlite
+          - postgresql
+      image_tag:
+        description: "Extra tag to push (default: latest)"
+        required: false
+        default: "latest"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: kidora-server
+  IMAGE_OWNER: chenxiccc
+
+jobs:
+  build-and-push:
+    name: Build & push ${{ github.event.inputs.db_provider || 'sqlite' }} image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.event.inputs.image_tag || 'latest' }}
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/server
+          file: apps/server/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            DATABASE_PROVIDER=${{ github.event.inputs.db_provider || 'sqlite' }}
+
+      - name: Summary
+        run: |
+          echo "Pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag || 'latest' }}"
+          echo "Provider: ${{ github.event.inputs.db_provider || 'sqlite' }}"
