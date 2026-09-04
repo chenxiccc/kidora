@@ -8,8 +8,10 @@
 FROM node:20-bookworm-slim
 
 # Prisma's query engine needs openssl at build (generate) and runtime.
+# python3/make/g++ are needed to compile the better-sqlite3 native binding
+# (npm ci below runs with --ignore-scripts, so its prebuilt binary is skipped).
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -29,6 +31,9 @@ RUN npm ci --no-audit --no-fund --ignore-scripts
 COPY . .
 ARG DATABASE_PROVIDER=postgresql
 ENV DATABASE_PROVIDER=${DATABASE_PROVIDER}
+# --ignore-scripts above skipped better-sqlite3's install script; rebuild its
+# native binding (downloads a prebuilt binary, or compiles from source as fallback).
+RUN npm rebuild better-sqlite3
 RUN npm run build
 
 ENV NODE_ENV=production
