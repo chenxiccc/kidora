@@ -3,6 +3,7 @@
 // configuration posture. It reports STATUS only (ok/warn/fail) and never leaks
 // secret values or the database URL.
 import { prisma } from "@/lib/prisma";
+import { registrationOpen } from "@/lib/site";
 
 export type DiagStatus = "ok" | "warn" | "fail";
 export type DiagCheck = { id: string; label: string; status: DiagStatus; detail: string };
@@ -66,6 +67,13 @@ export function evaluateEnvConfig(
     opts.isHttps || isLocal
       ? c("https", "HTTPS", "ok", isLocal ? "local (HTTPS non requis)" : "actif")
       : c("https", "HTTPS", "warn", "accès en HTTP — requis hors localhost pour l'installation PWA, le push et les cookies sécurisés"),
+  );
+
+  const reg = registrationOpen(env.ALLOW_REGISTRATION);
+  checks.push(
+    reg
+      ? c("register", "Inscription libre", "ok", "ouverte — définissez ALLOW_REGISTRATION=false pour la fermer")
+      : c("register", "Inscription libre", "ok", "fermée — seul un compte existant peut se connecter"),
   );
 
   return checks;

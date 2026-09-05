@@ -13,7 +13,7 @@ function byId(checks: { id: string; status: string }[], id: string) {
 describe("evaluateEnvConfig", () => {
   it("returns all expected checks", () => {
     const checks = evaluateEnvConfig(base, { host: "example.com", isHttps: true });
-    expect(ids(checks)).toEqual(["auth", "enc", "sign", "push", "smtp", "cron", "https"]);
+    expect(ids(checks)).toEqual(["auth", "enc", "sign", "push", "smtp", "cron", "https", "register"]);
   });
 
   it("flags a missing AUTH_SECRET as fail in production", () => {

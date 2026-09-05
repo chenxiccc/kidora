@@ -28,7 +28,7 @@ function StrengthMeter({ value }: { value: string }) {
   );
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({ mode, registrationOpen = true }: { mode: "login" | "register"; registrationOpen?: boolean }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -159,7 +159,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
           <p className="mt-5 text-center text-sm text-muted">
             {mode === "login" ? (
-              <>Pas encore de compte ? <Link href="/register" className="font-semibold text-brand-600">Inscrivez-vous</Link></>
+              registrationOpen ? (
+                <>Pas encore de compte ? <Link href="/register" className="font-semibold text-brand-600">Inscrivez-vous</Link></>
+              ) : null
             ) : (
               <>Déjà inscrit ? <Link href="/login" className="font-semibold text-brand-600">Connectez-vous</Link></>
             )}

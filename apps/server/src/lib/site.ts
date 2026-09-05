@@ -10,6 +10,18 @@ export function siteUrl(): string {
 }
 
 /**
+ * Whether self-registration is open to the public.
+ * Controlled by the ALLOW_REGISTRATION env var (defaults to "true" so the
+ * upstream behaviour is unchanged). Set ALLOW_REGISTRATION=false after creating
+ * your own account to lock the instance down.
+ */
+export function registrationOpen(env = process.env.ALLOW_REGISTRATION): boolean {
+  const v = (env ?? "").trim().toLowerCase();
+  if (v === "") return true; // unset → default open (upstream behaviour)
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+/**
  * Origin derived from the incoming request (honours proxy headers), falling
  * back to {@link siteUrl}. Server-only — reads request headers, so it must be
  * awaited inside a request scope (route handlers, metadata routes).

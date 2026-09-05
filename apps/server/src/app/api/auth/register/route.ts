@@ -8,7 +8,7 @@ import { apiError, json, readJson } from "@/lib/http";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { isMailConfigured, sendMail } from "@/lib/mailer";
 import { esc } from "@/lib/report-email";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, registrationOpen } from "@/lib/site";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -17,6 +17,15 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Self-registration can be closed by the operator (ALLOW_REGISTRATION=false).
+  // When closed, refuse every attempt; re-enable the env var to create accounts.
+  if (!registrationOpen()) {
+    return Response.json(
+      { error: "L'inscription est désactivée sur ce serveur." },
+      { status: 403 },
+    );
+  }
+
   const ip = clientIp(req);
   const rl = await rateLimit(`register:${ip}`, 5, 60 * 60_000); // 5/hour per IP
   if (!rl.ok) {

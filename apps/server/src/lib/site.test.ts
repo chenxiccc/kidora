@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { siteUrl } from "./site";
+import { siteUrl, registrationOpen } from "./site";
 
 const KEYS = ["NEXT_PUBLIC_SITE_URL", "VERCEL_URL"] as const;
 let saved: Record<string, string | undefined>;
@@ -29,5 +29,27 @@ describe("siteUrl", () => {
     process.env.VERCEL_URL = "kidora-abc123.vercel.app";
     process.env.NEXT_PUBLIC_SITE_URL = "https://kidora.app";
     expect(siteUrl()).toBe("https://kidora.app");
+  });
+});
+
+describe("registrationOpen", () => {
+  it("defaults to open when ALLOW_REGISTRATION is unset (upstream behaviour)", () => {
+    expect(registrationOpen(undefined)).toBe(true);
+    expect(registrationOpen("")).toBe(true);
+  });
+
+  it("opens with truthy values", () => {
+    expect(registrationOpen("true")).toBe(true);
+    expect(registrationOpen("1")).toBe(true);
+    expect(registrationOpen("yes")).toBe(true);
+    expect(registrationOpen("on")).toBe(true);
+    expect(registrationOpen(" TRUE ")).toBe(true);
+  });
+
+  it("closes with falsy values", () => {
+    expect(registrationOpen("false")).toBe(false);
+    expect(registrationOpen("0")).toBe(false);
+    expect(registrationOpen("no")).toBe(false);
+    expect(registrationOpen("off")).toBe(false);
   });
 });
